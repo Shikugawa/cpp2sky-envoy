@@ -31,10 +31,6 @@ class MockRandomGenerator : public RandomGenerator {
   MOCK_METHOD(std::string, uuid, ());
 };
 
-MockRandomGenerator::MockRandomGenerator() {
-  ON_CALL(*this, uuid).WillByDefault(Return("uuid"));
-}
-
 class MockAsyncStream : public AsyncStream {
  public:
   MOCK_METHOD(uint16_t, status, (), (const));
@@ -43,18 +39,16 @@ class MockAsyncStream : public AsyncStream {
   MOCK_METHOD(const Message&, reply, (), (const));
 };
 
+template <class StubType>
 class MockAsyncStreamFactory : public AsyncStreamFactory<StubType> {
  public:
-  MockAsyncStreamFactory(AsyncStreamPtr stream);
+  MockAsyncStreamFactory(AsyncStreamPtr stream) : stream_(stream) {
+    ON_CALL(*this, create(_)).WillByDefault(Return(stream_));
+  }
   MOCK_METHOD(AsyncStreamPtr, create, (AsyncClient<StubType>*));
 
  private:
   AsyncStreamPtr stream_;
 };
-
-MockAsyncStreamFactory::MockAsyncStreamFactory(AsyncStreamPtr stream)
-    : stream_(stream) {
-  ON_CALL(*this, create(_)).WillByDefault(Return(stream_));
-}
 
 }  // namespace cpp2sky

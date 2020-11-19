@@ -38,7 +38,7 @@ class GrpcAsyncSegmentReporterClientTest : public testing::Test {
 };
 
 TEST_F(GrpcAsyncSegmentReporterClientTest, SendMessageTest) {
-  MockAsyncStreamFactory factory(stream_);
+  MockAsyncStreamFactory<StubType> factory(stream_);
   GrpcAsyncSegmentReporterClient client(cq_, channel_, factory);
   SegmentObject fake_message;
 

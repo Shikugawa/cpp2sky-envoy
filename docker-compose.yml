@@ -2,36 +2,29 @@ version: "3.7"
 services:
   # Skywalking components.
   elasticsearch:
-    image: elasticsearch:7.9.2
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.8.1
+    container_name: elasticsearch
     restart: always
     ports:
       - 9200:9200
-    healthcheck:
-      test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
     environment:
       discovery.type: single-node
-    expose:
-      - "9200"
     ulimits:
       memlock:
         soft: -1
         hard: -1
   oap:
-    image: apache/skywalking-oap-server:8.1.0-es7
+    image: skywalking/oap:latest
     depends_on:
       - elasticsearch
     links:
       - elasticsearch
     restart: always
     ports:
-      - 11800:11800
-      - 12800:12800
+      - 11800:11800 # GRPC
+      - 12800:12800 # REST
     environment:
-      SW_STORAGE: elasticsearch7
+      SW_STORAGE: elasticsearch
       SW_STORAGE_ES_CLUSTER_NODES: elasticsearch:9200
     expose:
       - "11800"
@@ -42,8 +35,9 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    restart: on-failure
   ui:
-    image: apache/skywalking-ui:8.1.0
+    image: skywalking/ui:latest
     depends_on:
       - oap
     links:
