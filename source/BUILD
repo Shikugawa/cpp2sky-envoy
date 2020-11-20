@@ -17,7 +17,6 @@ cc_library(
   deps = [
     "@skywalking_data_collect_protocol//language-agent:tracing_protocol_cc_proto",
     "@skywalking_data_collect_protocol//language-agent:tracing_protocol_cc_grpc",
-    "@com_github_gabime_spdlog//:spdlog",
     "@com_github_grpc_grpc//:grpc++",
     "//cpp2sky:config_interface",
     "//cpp2sky:tracer_interface",

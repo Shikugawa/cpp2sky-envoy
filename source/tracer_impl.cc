@@ -14,7 +14,7 @@
 
 #include "source/tracer_impl.h"
 
-#include <iostream>
+#include "source/utils/exception.h"
 
 namespace cpp2sky {
 
@@ -39,14 +39,19 @@ void TracerImpl::run() {
       continue;
     }
     TaggedStream* t_stream = deTag(got_tag);
-    if (t_stream->operation == TaggedStream::Operation::Init) {
-      std::cout << "Connected" << std::endl;
-    } else if (t_stream->operation == TaggedStream::Operation::Write) {
-      std::cout << "Write finished" << std::endl;
-    } else if (t_stream->operation == TaggedStream::Operation::WriteDone) {
-      std::cout << "Write done, this stream will be closed" << std::endl;
+    if (t_stream->operation == Operation::Connected) {
+      t_stream->stream->updateState(Operation::Connected);
+      gpr_log(GPR_INFO, "Established connection: %s",
+              t_stream->stream->peerAddress().c_str());
+    } else if (t_stream->operation == Operation::Write) {
+      if (t_stream->stream->currentState() == Operation::Write) {
+        t_stream->stream->updateState(Operation::Connected);
+      }
+      gpr_log(GPR_INFO, "Write finished");
+    } else if (t_stream->operation == Operation::WriteDone) {
+      gpr_log(GPR_INFO, "Write done. This stream will be closed.");
     } else {
-      GPR_ASSERT(false);
+      throw TracerException("Unknown stream operation");
     }
   }
 }

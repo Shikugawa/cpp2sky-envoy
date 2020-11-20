@@ -6,8 +6,6 @@ def cpp2sky_dependencies():
   com_github_grpc_grpc()
   com_google_googletest()
   com_google_protobuf()
-  com_github_fmtlib_fmt()
-  com_github_gabime_spdlog()
 
 def skywalking_data_collect_protocol():
   http_archive(
@@ -51,22 +49,4 @@ def com_google_protobuf():
     sha256 = "f8a547dfe143a9f61fadafba47fa6573713a33cb80909307c1502e26e1102298",
     strip_prefix = "protobuf-3.13.0",
     urls = ["https://github.com/protocolbuffers/protobuf/releases/download/v3.13.0/protobuf-cpp-3.13.0.tar.gz"],
-  )
-
-def com_github_fmtlib_fmt():
-  http_archive(
-    name = "com_github_fmtlib_fmt",
-    sha256 = "decfdf9ad274070fa85f26407b816f5a4d82205ae86bac1990be658d0795ea4d",
-    strip_prefix = "fmt-7.0.3",
-    urls = ["https://github.com/fmtlib/fmt/releases/download/7.0.3/fmt-7.0.3.zip"],
-    build_file = "//bazel:fmtlib.BUILD",
-  )
-
-def com_github_gabime_spdlog():
-  http_archive(
-    name = "com_github_gabime_spdlog",
-    sha256 = "f0114a4d3c88be9e696762f37a7c379619443ce9d668546c61b21d41affe5b62",
-    strip_prefix = "spdlog-1.7.0",
-    urls = ["https://github.com/gabime/spdlog/archive/v1.7.0.tar.gz"],
-    build_file = "//bazel:spdlog.BUILD",
   )
