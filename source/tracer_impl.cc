@@ -35,18 +35,16 @@ void TracerImpl::run() {
   void* got_tag;
   bool ok = false;
   while (true) {
-    gpr_timespec deadline = gpr_time_add(
-        gpr_now(GPR_CLOCK_REALTIME), gpr_time_from_seconds(3, GPR_TIMESPAN));
     grpc::CompletionQueue::NextStatus status =
-        cq_.AsyncNext(&got_tag, &ok, deadline);
+        cq_.AsyncNext(&got_tag, &ok, gpr_inf_future(GPR_CLOCK_REALTIME));
     if (status == grpc::CompletionQueue::SHUTDOWN) {
       return;
     }
-    if (status == grpc::CompletionQueue::NextStatus::TIMEOUT) {
+    TaggedStream* t_stream = deTag(got_tag);
+    if (!ok) {
       continue;
     }
-    TaggedStream* t_stream = deTag(got_tag);
-    if (!ok || !t_stream->stream->handleOperation(t_stream->operation)) {
+    if (!t_stream->stream->handleOperation(t_stream->operation)) {
       return;
     }
   }

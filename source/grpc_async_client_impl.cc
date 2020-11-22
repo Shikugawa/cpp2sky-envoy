@@ -52,6 +52,12 @@ GrpcAsyncSegmentReporterStream::~GrpcAsyncSegmentReporterStream() {
 
 bool GrpcAsyncSegmentReporterStream::startStream() {
   request_writer_.reset();
+
+  // Ensure pending RPC will complete if connection to the server is not
+  // established first because of like server is not ready. This will queue
+  // pending RPCs and when connection has established, Connected tag will be
+  // sent to CompletionQueue.
+  ctx_.set_wait_for_ready(true);
   request_writer_ = client_->grpcStub()->Asynccollect(
       &ctx_, &commands_, client_->completionQueue(), toTag(&connected_));
   return true;
@@ -63,7 +69,7 @@ void GrpcAsyncSegmentReporterStream::sendMessage(Message& message) {
 }
 
 bool GrpcAsyncSegmentReporterStream::clearPendingMessages() {
-  if (state_ != Operation::Connected) {
+  if (state_ != Operation::Idle || pending_messages_.empty()) {
     return false;
   }
   auto message = pending_messages_.back();
@@ -79,16 +85,23 @@ bool GrpcAsyncSegmentReporterStream::handleOperation(Operation incoming_op) {
   while (true) {
     switch (state_) {
       case Operation::Connected:
-        gpr_log(GPR_ERROR, "Established connection: %s",
+        gpr_log(GPR_INFO, "Established connection: %s",
                 client_->peerAddress().c_str());
+        state_ = Operation::Idle;
+        break;
+      case Operation::Idle:
+        gpr_log(GPR_INFO, "Stream idleing");
+        // Release pending messages which are inserted when stream is not ready
+        // to write.
+        clearPendingMessages();
         return true;
       case Operation::WriteDone:
-        state_ = Operation::Connected;
-        gpr_log(GPR_ERROR, "Write finished");
+        state_ = Operation::Idle;
+        gpr_log(GPR_INFO, "Write finished");
         break;
       case Operation::Finished:
-        gpr_log(GPR_ERROR, "Stream closed with http status: %d",  
-          grpcStatusToGenericHttpStatus(status_.error_code()));
+        gpr_log(GPR_INFO, "Stream closed with http status: %d",
+                grpcStatusToGenericHttpStatus(status_.error_code()));
         if (!status_.ok()) {
           gpr_log(GPR_ERROR, "%s", status_.error_message().c_str());
         }
