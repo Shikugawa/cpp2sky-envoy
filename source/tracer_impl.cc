@@ -27,31 +27,27 @@ TracerImpl::TracerImpl(std::string address,
 
 TracerImpl::~TracerImpl() {
   delete client_;
-  cq_.Shutdown();
   th_.join();
+  cq_.Shutdown();
 }
 
 void TracerImpl::run() {
   void* got_tag;
   bool ok = false;
-  while (cq_.Next(&got_tag, &ok)) {
-    if (!ok) {
+  while (true) {
+    gpr_timespec deadline = gpr_time_add(
+        gpr_now(GPR_CLOCK_REALTIME), gpr_time_from_seconds(3, GPR_TIMESPAN));
+    grpc::CompletionQueue::NextStatus status =
+        cq_.AsyncNext(&got_tag, &ok, deadline);
+    if (status == grpc::CompletionQueue::SHUTDOWN) {
+      return;
+    }
+    if (status == grpc::CompletionQueue::NextStatus::TIMEOUT) {
       continue;
     }
     TaggedStream* t_stream = deTag(got_tag);
-    if (t_stream->operation == Operation::Connected) {
-      t_stream->stream->updateState(Operation::Connected);
-      gpr_log(GPR_INFO, "Established connection: %s",
-              t_stream->stream->peerAddress().c_str());
-    } else if (t_stream->operation == Operation::Write) {
-      if (t_stream->stream->currentState() == Operation::Write) {
-        t_stream->stream->updateState(Operation::Connected);
-      }
-      gpr_log(GPR_INFO, "Write finished");
-    } else if (t_stream->operation == Operation::WriteDone) {
-      gpr_log(GPR_INFO, "Write done. This stream will be closed.");
-    } else {
-      throw TracerException("Unknown stream operation");
+    if (!ok || !t_stream->stream->handleOperation(t_stream->operation)) {
+      return;
     }
   }
 }
