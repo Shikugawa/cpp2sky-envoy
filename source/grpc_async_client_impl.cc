@@ -87,7 +87,11 @@ bool GrpcAsyncSegmentReporterStream::handleOperation(Operation incoming_op) {
         gpr_log(GPR_ERROR, "Write finished");
         break;
       case Operation::Finished:
-        gpr_log(GPR_ERROR, "Stream closed");
+        gpr_log(GPR_ERROR, "Stream closed with http status: %d",  
+          grpcStatusToGenericHttpStatus(status_.error_code()));
+        if (!status_.ok()) {
+          gpr_log(GPR_ERROR, "%s", status_.error_message().c_str());
+        }
         return false;
       default:
         throw TracerException("Unknown stream operation");
