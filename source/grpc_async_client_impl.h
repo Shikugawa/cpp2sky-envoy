@@ -45,6 +45,7 @@ class TracerStubImpl final
       grpc::ClientContext* ctx, TracerResponseType* response,
       grpc::CompletionQueue* cq, void* tag) override;
 
+
  private:
   std::unique_ptr<TraceSegmentReportService::Stub> stub_;
 };
